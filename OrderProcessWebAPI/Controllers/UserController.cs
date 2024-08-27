@@ -77,9 +77,9 @@ public class UserController : ControllerBase
 
     [HttpPut]
     [Authorize(Roles = "admin")]
-    public IActionResult UpdateUser(UpdateUserDTO updateUserDTO)
+    public IActionResult UpdateUser([FromBody] UpdateUserDTO updateUserDTO)
     {
-        if (updateUserDTO == null) return BadRequest();
+        if (!ModelState.IsValid) return BadRequest(ModelState);
 
         try
         {
@@ -99,6 +99,7 @@ public class UserController : ControllerBase
             return StatusCode(500, $"Internal server error: {ex.Message}");
         }
     }
+
 
     [HttpDelete("{id}")]
     [Authorize(Roles = "admin")]

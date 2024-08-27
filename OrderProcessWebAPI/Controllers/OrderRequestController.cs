@@ -1,9 +1,11 @@
-﻿using Microsoft.AspNetCore.Http.HttpResults;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using OrderProcess.Business.Services;
 using OrderProcess.Entities.Dtos;
 using OrderProcess.Entities.Entities;
+using OrderProcess.Entities.Enums;
 
 namespace OrderProcessWebAPI.Controllers;
 
@@ -85,15 +87,17 @@ public class OrderRequestController : ControllerBase
         {
             return BadRequest("Status cannot be null or empty.");
         }
-        if( newStatus != "offerExpected" && newStatus != "offerSubmitted")
+        if (newStatus != OrderStatusEnum.offerExpected && newStatus != OrderStatusEnum.offerSubmitted)
         {
             return BadRequest("Wrong Status");
         }
-
         try
         {
-            var updatedOrderRequest = await _orderRequestService.UpdateOrderStatus(id, newStatus);
-            return Ok(updatedOrderRequest);
+            bool updatedOrderRequest = await _orderRequestService.UpdateOrderStatus(id, newStatus);
+
+            if (!updatedOrderRequest) return NotFound("Order Not Found");
+
+            return Ok();
         }
         catch (Exception ex)
         {

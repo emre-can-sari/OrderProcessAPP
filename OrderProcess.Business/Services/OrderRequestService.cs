@@ -27,8 +27,15 @@ public class OrderRequestService
 
         try
         {
-            Product product = new Product { Name = orderRequestDto.ProductName };
-            await _context.Products.AddAsync(product);
+            var product = await _context.Products
+            .FirstOrDefaultAsync(p => p.Name == orderRequestDto.ProductName);
+
+            if (product == null)
+            {
+
+                product = new Product { Name = orderRequestDto.ProductName };
+                _context.Products.Add(product);
+            }
 
             OrderItem orderItem = new OrderItem { Product = product, Quantity = orderRequestDto.ProductQuantity };
             await _context.OrderItems.AddAsync(orderItem);
@@ -113,7 +120,7 @@ public class OrderRequestService
             throw new Exception("Order request update failed.", ex);
         }
     }
-    public async Task<OrderRequest> UpdateOrderStatus(int orderRequestId, string newStatus)
+    public async Task<bool> UpdateOrderStatus(int orderRequestId, string newStatus)
     {
         using var transaction = await _context.Database.BeginTransactionAsync();
 
@@ -132,7 +139,7 @@ public class OrderRequestService
             await _context.SaveChangesAsync();
 
             await transaction.CommitAsync();
-            return orderRequest;
+            return true;
         }
         catch (Exception ex)
         {

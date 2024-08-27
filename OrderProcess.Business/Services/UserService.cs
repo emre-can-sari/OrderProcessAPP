@@ -2,6 +2,7 @@
 using Microsoft.IdentityModel.Tokens;
 using OrderProcess.DataAccess;
 using OrderProcess.Entities.Entities;
+using OrderProcess.Entities.Enums;
 using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
@@ -27,6 +28,10 @@ public class UserService
     public User register(RegisterDto registerDto)
     {
         if (registerDto == null) throw new ArgumentNullException(nameof(registerDto));
+        if (_context.Users.Any(x => x.Email == registerDto.Email))
+        {
+            return null;
+        }
 
         User user = new User 
         { 
@@ -77,21 +82,33 @@ public class UserService
         var user = _context.Users.SingleOrDefault(x => x.Email == updateUserDTO.UserEmail);
         if (user == null) throw new InvalidOperationException("User not found.");
 
+
+        if (!string.IsNullOrEmpty(updateUserDTO.NewEmail) && updateUserDTO.NewEmail != user.Email)
+        {
+            var existingUser = _context.Users.SingleOrDefault(x => x.Email == updateUserDTO.NewEmail);
+            if (existingUser != null)
+            {
+                throw new InvalidOperationException("Email address is already in use.");
+            }
+            user.Email = updateUserDTO.NewEmail;
+        }
+
         user.NameSurname = updateUserDTO.NameSurname;
         user.Password = HashPassword(updateUserDTO.Password);
-        user.Email = updateUserDTO.NewEmail;
         user.Roles = updateUserDTO.Roles;
 
         _context.Users.Update(user);
         _context.SaveChanges();
         return user;
     }
+
     public void DeleteUser(int id)
     {
         var user = _context.Users.Find(id);
         if (user != null)
         {
-            _context.Users.Remove(user);
+            user.Roles = EnumStringRoles.DeletedUser;
+            _context.Users.Update(user);
             _context.SaveChanges();
         }
     }
@@ -116,8 +133,9 @@ public class UserService
         {
             Subject = new ClaimsIdentity(new[]
             {
+            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new Claim(ClaimTypes.Name, user.NameSurname),
-            new Claim(ClaimTypes.Role, user.Roles) 
+            new Claim(ClaimTypes.Role, user.Roles)
         }),
             Expires = DateTime.UtcNow.AddHours(1),
             Issuer = _configuration["Jwt:Issuer"],    
