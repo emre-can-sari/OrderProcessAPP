@@ -30,31 +30,57 @@ public class OrderOfferService
 
         try
         {
-            var product = await _context.Products
-            .FirstOrDefaultAsync(p => p.Name == orderOfferDto.ProductName);
-
-            if (product == null)
+            var orderRequest = _context.OrderRequests.FirstOrDefault(x=> x.Id == orderOfferDto.OrderRequestId);
+            if(orderRequest.Status == OrderStatusEnum.accepted)
             {
-
-                product = new Product { Name = orderOfferDto.ProductName };
-                _context.Products.Add(product);
+                throw new Exception("You cannot bid on completed orders");
             }
 
-            var orderItem = new OrderItem { Product = product, Quantity = orderOfferDto.Quantity };
-            _context.OrderItems.Add(orderItem);
+            List<OrderOfferItem> orderItems = new List<OrderOfferItem>();
+            decimal totalPrice = 0;
+            foreach (var productDto in orderOfferDto.OrderOfferItems)
+            {
+                totalPrice += productDto.Price;
+                var product = await _context.Products
+                    .FirstOrDefaultAsync(p => p.Name == productDto.OrderItems.ProductName);
+
+                if (product == null)
+                {
+                    product = new Product { Name = productDto.OrderItems.ProductName };
+                    _context.Products.Add(product);
+                    await _context.SaveChangesAsync();
+                }
+
+                OrderItem orderItem = new OrderItem
+                {
+                    Product = product,
+                    Quantity = productDto.OrderItems.ProductQuantity
+                };
+                await _context.OrderItems.AddAsync(orderItem);
+                await _context.SaveChangesAsync();
+
+                OrderOfferItem orderOfferItem = new OrderOfferItem
+                {
+                    OrderItem = orderItem,
+                    Price = productDto.Price
+                };
+                await _context.OrderOfferItems.AddAsync(orderOfferItem);
+
+                orderItems.Add(orderOfferItem);
+            }
 
             var claim = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier);
             if (claim != null && int.TryParse(claim.Value, out int userId))
             {
-                var orderOffer = new OrderOffer
+                OrderOffer orderOffer = new OrderOffer
                 {
                     UserId = userId,
                     OrderRequestId = orderOfferDto.OrderRequestId,
-                    OrderItem = orderItem,
-                    Price = orderOfferDto.Price,
+                    OrderOfferItems = orderItems,
+                    TotalPrice = totalPrice,
                     DeliveryTime = orderOfferDto.DeliveryTime,
                 };
-                _context.OrderOffers.Add(orderOffer);
+                await _context.OrderOffers.AddAsync(orderOffer);
                 await _context.SaveChangesAsync();
 
                 await transaction.CommitAsync();
@@ -66,21 +92,23 @@ public class OrderOfferService
                 throw new Exception("User ID is invalid or not found.");
             }
         }
-
         catch (Exception ex)
         {
             await transaction.RollbackAsync();
             throw new Exception("Order offer creation failed.", ex);
         }
     }
+
+
     public async Task<List<OrderOffer>> GetOrderOffersByUserId()
     {
         var claim = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier);
         if (claim != null && int.TryParse(claim.Value, out int userId))
         {
             var orderOffers = await _context.OrderOffers
-                .Include(o => o.OrderItem) 
-                .ThenInclude(oi => oi.Product)
+                .Include(o => o.OrderOfferItems)
+               .ThenInclude(ooi => ooi.OrderItem)
+               .ThenInclude(oi => oi.Product)
                 .Where(o => o.UserId == userId)
                 .ToListAsync();
 
@@ -94,8 +122,10 @@ public class OrderOfferService
      public async Task<List<OrderOffer>> GetOrderOffersByOrderRequestId(int orderRequestId)
         {
             return await _context.OrderOffers
-                .Include(o => o.OrderItem)
-                .ThenInclude(oi => oi.Product)
+               .Include(o => o.OrderOfferItems)
+               .ThenInclude(ooi=> ooi.OrderItem)
+               .ThenInclude(oi=> oi.Product)
+               
                 .Where(o => o.OrderRequestId == orderRequestId)
                 .ToListAsync();
         }
@@ -107,8 +137,6 @@ public class OrderOfferService
         try
         {
             var orderOffer = await _context.OrderOffers
-                .Include(o => o.OrderItem)
-                .ThenInclude(oi => oi.Product)
                 .SingleOrDefaultAsync(o => o.Id == id);
 
             if (orderOffer == null)

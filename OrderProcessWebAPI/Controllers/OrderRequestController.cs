@@ -11,6 +11,7 @@ namespace OrderProcessWebAPI.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize(Roles = "admin")]
 public class OrderRequestController : ControllerBase
 {
     private readonly OrderRequestService _orderRequestService;

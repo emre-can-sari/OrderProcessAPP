@@ -11,8 +11,8 @@ using OrderProcess.DataAccess;
 namespace OrderProcess.DataAccess.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20240826221040_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20240829115707_Initial")]
+    partial class Initial
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -26,6 +26,9 @@ namespace OrderProcess.DataAccess.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<int?>("OrderRequestId")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int>("ProductId")
                         .HasColumnType("INTEGER");
 
@@ -33,6 +36,8 @@ namespace OrderProcess.DataAccess.Migrations
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("OrderRequestId");
 
                     b.HasIndex("ProductId");
 
@@ -48,17 +53,14 @@ namespace OrderProcess.DataAccess.Migrations
                     b.Property<DateTime>("DeliveryTime")
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("OrderItemId")
-                        .HasColumnType("INTEGER");
-
                     b.Property<int>("OrderRequestId")
                         .HasColumnType("INTEGER");
 
-                    b.Property<decimal>("Price")
-                        .HasColumnType("TEXT");
-
                     b.Property<string>("Status")
                         .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("TotalPrice")
                         .HasColumnType("TEXT");
 
                     b.Property<int>("UserId")
@@ -66,9 +68,31 @@ namespace OrderProcess.DataAccess.Migrations
 
                     b.HasKey("Id");
 
+                    b.ToTable("OrderOffers");
+                });
+
+            modelBuilder.Entity("OrderProcess.Entities.Entities.OrderOfferItem", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("OrderItemId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("OrderOfferId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<decimal>("Price")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
                     b.HasIndex("OrderItemId");
 
-                    b.ToTable("OrderOffers");
+                    b.HasIndex("OrderOfferId");
+
+                    b.ToTable("OrderOfferItems");
                 });
 
             modelBuilder.Entity("OrderProcess.Entities.Entities.OrderRequest", b =>
@@ -80,16 +104,11 @@ namespace OrderProcess.DataAccess.Migrations
                     b.Property<DateTime>("DeliveryTime")
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("OrderItemsId")
-                        .HasColumnType("INTEGER");
-
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("OrderItemsId");
 
                     b.ToTable("OrderRequests");
                 });
@@ -153,6 +172,10 @@ namespace OrderProcess.DataAccess.Migrations
 
             modelBuilder.Entity("OrderProcess.Entities.Entities.OrderItem", b =>
                 {
+                    b.HasOne("OrderProcess.Entities.Entities.OrderRequest", null)
+                        .WithMany("OrderItems")
+                        .HasForeignKey("OrderRequestId");
+
                     b.HasOne("OrderProcess.Entities.Entities.Product", "Product")
                         .WithMany()
                         .HasForeignKey("ProductId")
@@ -162,7 +185,7 @@ namespace OrderProcess.DataAccess.Migrations
                     b.Navigation("Product");
                 });
 
-            modelBuilder.Entity("OrderProcess.Entities.Entities.OrderOffer", b =>
+            modelBuilder.Entity("OrderProcess.Entities.Entities.OrderOfferItem", b =>
                 {
                     b.HasOne("OrderProcess.Entities.Entities.OrderItem", "OrderItem")
                         .WithMany()
@@ -170,17 +193,20 @@ namespace OrderProcess.DataAccess.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("OrderProcess.Entities.Entities.OrderOffer", null)
+                        .WithMany("OrderOfferItems")
+                        .HasForeignKey("OrderOfferId");
+
                     b.Navigation("OrderItem");
+                });
+
+            modelBuilder.Entity("OrderProcess.Entities.Entities.OrderOffer", b =>
+                {
+                    b.Navigation("OrderOfferItems");
                 });
 
             modelBuilder.Entity("OrderProcess.Entities.Entities.OrderRequest", b =>
                 {
-                    b.HasOne("OrderProcess.Entities.Entities.OrderItem", "OrderItems")
-                        .WithMany()
-                        .HasForeignKey("OrderItemsId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.Navigation("OrderItems");
                 });
 #pragma warning restore 612, 618

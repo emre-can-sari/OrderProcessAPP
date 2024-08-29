@@ -9,8 +9,6 @@ namespace OrderProcess.Entities.Dtos;
 public class OrderOfferDTO
 {
     public int OrderRequestId { get; set; }
-    public decimal Quantity { get; set; }
-    public string ProductName { get; set; }
-    public decimal Price { get; set; }
+    public List<OrderOfferItemDTO> OrderOfferItems { get; set; }
     public DateTime DeliveryTime { get; set; }
 }

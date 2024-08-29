@@ -19,7 +19,7 @@ public class OrderOfferController : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Roles = "user")]
+    [Authorize(Roles = "user,admin")]
     public async Task<IActionResult> CreateOrderOffer(OrderOfferDTO orderOfferDto)
     {
         if (orderOfferDto == null)
@@ -39,7 +39,7 @@ public class OrderOfferController : ControllerBase
 
 
     [HttpGet("myOffers")]
-    [Authorize(Roles = "user")]
+    [Authorize(Roles = "user,admin")]
     public async Task<IActionResult> GetOrderOffersByUserId()
     {
         try

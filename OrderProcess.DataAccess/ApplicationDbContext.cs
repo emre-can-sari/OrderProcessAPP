@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using OrderProcess.Entities.Dtos;
 using OrderProcess.Entities.Entities;
 using System;
 using System.Collections.Generic;
@@ -17,7 +18,13 @@ namespace OrderProcess.DataAccess
         public DbSet<OrderOffer> OrderOffers { get; set; }
         public DbSet<OrderStatus> OrderStatuses { get; set; }
         public DbSet<OrderItem> OrderItems { get; set; }
+        public DbSet<OrderOfferItem> OrderOfferItems { get; set; }
         public DbSet<Product> Products { get; set; }
+        //protected override void OnModelCreating(ModelBuilder modelBuilder)
+        //{
+        //    modelBuilder.Ignore<OrderItemDTO>(); 
+        //    modelBuilder.Ignore<OrderOfferItemDTO>(); 
+        //}
 
     }
 }

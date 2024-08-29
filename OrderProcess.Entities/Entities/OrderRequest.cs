@@ -10,7 +10,7 @@ namespace OrderProcess.Entities.Entities;
 public class OrderRequest
 {
     public int Id { get; set; }
-    public OrderItem OrderItems { get; set; }
+    public List<OrderItem> OrderItems { get; set; }
     public string Status { get; set; } = OrderStatusEnum.offerExpected;
     public DateTime DeliveryTime { get; set; }
 }

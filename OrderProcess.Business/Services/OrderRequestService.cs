@@ -27,23 +27,33 @@ public class OrderRequestService
 
         try
         {
-            var product = await _context.Products
-            .FirstOrDefaultAsync(p => p.Name == orderRequestDto.ProductName);
+            List<OrderItem> orderItems = new List<OrderItem>();
 
-            if (product == null)
+            foreach (var productDto in orderRequestDto.OrderItems)
             {
+                var product = await _context.Products
+                    .FirstOrDefaultAsync(p => p.Name == productDto.ProductName);
 
-                product = new Product { Name = orderRequestDto.ProductName };
-                _context.Products.Add(product);
+                if (product == null)
+                {
+                    product = new Product { Name = productDto.ProductName };
+                    _context.Products.Add(product);
+                }
+
+                OrderItem orderItem = new OrderItem
+                {
+                    Product = product,
+                    Quantity = productDto.ProductQuantity
+                };
+                orderItems.Add(orderItem);
+                await _context.OrderItems.AddAsync(orderItem);
             }
-
-            OrderItem orderItem = new OrderItem { Product = product, Quantity = orderRequestDto.ProductQuantity };
-            await _context.OrderItems.AddAsync(orderItem);
 
             OrderRequest orderRequest = new OrderRequest
             {
-                OrderItems = orderItem,
-                DeliveryTime = orderRequestDto.RequestedDeliveryDay
+                OrderItems = orderItems,
+                DeliveryTime = orderRequestDto.RequestedDeliveryDay,
+                
             };
             await _context.OrderRequests.AddAsync(orderRequest);
             await _context.SaveChangesAsync();
@@ -57,9 +67,8 @@ public class OrderRequestService
             await transaction.RollbackAsync();
             throw new Exception("Order request creation failed.", ex);
         }
-       
     }
-    
+
 
     public async Task<List<OrderRequest>> GetAllOrderRequests()
     {
@@ -86,25 +95,40 @@ public class OrderRequestService
             {
                 throw new Exception("Order request not found.");
             }
-
-            var product = orderRequest.OrderItems.Product;
-
-            if (product == null)
-            {
-                product = new Product { Name = orderRequestDto.ProductName };
-                await _context.Products.AddAsync(product);
-            }
-            else
-            {
-                product.Name = orderRequestDto.ProductName;
-                _context.Products.Update(product);
+            if (orderRequest.Status == OrderStatusEnum.accepted) {
+                throw new Exception("Confirmed orders cannot be updated");
             }
 
-            orderRequest.OrderItems.Quantity = orderRequestDto.ProductQuantity;
-            orderRequest.OrderItems.Product = product;
+            _context.OrderItems.RemoveRange(orderRequest.OrderItems);
 
-            _context.OrderItems.Update(orderRequest.OrderItems);
+            List<OrderItem> updatedOrderItems = new List<OrderItem>();
 
+            foreach (var productDto in orderRequestDto.OrderItems)
+            {
+                var product = await _context.Products
+                    .FirstOrDefaultAsync(p => p.Name == productDto.ProductName);
+
+                if (product == null)
+                {
+                    product = new Product { Name = productDto.ProductName };
+                    await _context.Products.AddAsync(product);
+                }
+                else
+                {
+                    product.Name = productDto.ProductName;
+                    _context.Products.Update(product);
+                }
+
+                OrderItem orderItem = new OrderItem
+                {
+                    Product = product,
+                    Quantity = productDto.ProductQuantity
+                };
+                updatedOrderItems.Add(orderItem);
+                await _context.OrderItems.AddAsync(orderItem);
+            }
+
+            orderRequest.OrderItems = updatedOrderItems;
             orderRequest.DeliveryTime = orderRequestDto.RequestedDeliveryDay;
 
             _context.OrderRequests.Update(orderRequest);
@@ -120,6 +144,8 @@ public class OrderRequestService
             throw new Exception("Order request update failed.", ex);
         }
     }
+
+
     public async Task<bool> UpdateOrderStatus(int orderRequestId, string newStatus)
     {
         using var transaction = await _context.Database.BeginTransactionAsync();

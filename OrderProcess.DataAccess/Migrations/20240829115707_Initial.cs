@@ -6,11 +6,42 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace OrderProcess.DataAccess.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreate : Migration
+    public partial class Initial : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.CreateTable(
+                name: "OrderOffers",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    UserId = table.Column<int>(type: "INTEGER", nullable: false),
+                    OrderRequestId = table.Column<int>(type: "INTEGER", nullable: false),
+                    TotalPrice = table.Column<decimal>(type: "TEXT", nullable: false),
+                    DeliveryTime = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    Status = table.Column<string>(type: "TEXT", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_OrderOffers", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "OrderRequests",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    Status = table.Column<string>(type: "TEXT", nullable: false),
+                    DeliveryTime = table.Column<DateTime>(type: "TEXT", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_OrderRequests", x => x.Id);
+                });
+
             migrationBuilder.CreateTable(
                 name: "OrderStatuses",
                 columns: table => new
@@ -60,11 +91,17 @@ namespace OrderProcess.DataAccess.Migrations
                     Id = table.Column<int>(type: "INTEGER", nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
                     Quantity = table.Column<decimal>(type: "TEXT", nullable: false),
-                    ProductId = table.Column<int>(type: "INTEGER", nullable: false)
+                    ProductId = table.Column<int>(type: "INTEGER", nullable: false),
+                    OrderRequestId = table.Column<int>(type: "INTEGER", nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_OrderItems", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_OrderItems_OrderRequests_OrderRequestId",
+                        column: x => x.OrderRequestId,
+                        principalTable: "OrderRequests",
+                        principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_OrderItems_Products_ProductId",
                         column: x => x.ProductId,
@@ -74,49 +111,35 @@ namespace OrderProcess.DataAccess.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "OrderOffers",
+                name: "OrderOfferItems",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "INTEGER", nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
-                    UserId = table.Column<int>(type: "INTEGER", nullable: false),
-                    OrderRequestId = table.Column<int>(type: "INTEGER", nullable: false),
                     OrderItemId = table.Column<int>(type: "INTEGER", nullable: false),
                     Price = table.Column<decimal>(type: "TEXT", nullable: false),
-                    DeliveryTime = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    Status = table.Column<string>(type: "TEXT", nullable: false)
+                    OrderOfferId = table.Column<int>(type: "INTEGER", nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_OrderOffers", x => x.Id);
+                    table.PrimaryKey("PK_OrderOfferItems", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_OrderOffers_OrderItems_OrderItemId",
+                        name: "FK_OrderOfferItems_OrderItems_OrderItemId",
                         column: x => x.OrderItemId,
                         principalTable: "OrderItems",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_OrderOfferItems_OrderOffers_OrderOfferId",
+                        column: x => x.OrderOfferId,
+                        principalTable: "OrderOffers",
+                        principalColumn: "Id");
                 });
 
-            migrationBuilder.CreateTable(
-                name: "OrderRequests",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    OrderItemsId = table.Column<int>(type: "INTEGER", nullable: false),
-                    Status = table.Column<string>(type: "TEXT", nullable: false),
-                    DeliveryTime = table.Column<DateTime>(type: "TEXT", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_OrderRequests", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_OrderRequests_OrderItems_OrderItemsId",
-                        column: x => x.OrderItemsId,
-                        principalTable: "OrderItems",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
+            migrationBuilder.CreateIndex(
+                name: "IX_OrderItems_OrderRequestId",
+                table: "OrderItems",
+                column: "OrderRequestId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_OrderItems_ProductId",
@@ -124,24 +147,21 @@ namespace OrderProcess.DataAccess.Migrations
                 column: "ProductId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_OrderOffers_OrderItemId",
-                table: "OrderOffers",
+                name: "IX_OrderOfferItems_OrderItemId",
+                table: "OrderOfferItems",
                 column: "OrderItemId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_OrderRequests_OrderItemsId",
-                table: "OrderRequests",
-                column: "OrderItemsId");
+                name: "IX_OrderOfferItems_OrderOfferId",
+                table: "OrderOfferItems",
+                column: "OrderOfferId");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "OrderOffers");
-
-            migrationBuilder.DropTable(
-                name: "OrderRequests");
+                name: "OrderOfferItems");
 
             migrationBuilder.DropTable(
                 name: "OrderStatuses");
@@ -151,6 +171,12 @@ namespace OrderProcess.DataAccess.Migrations
 
             migrationBuilder.DropTable(
                 name: "OrderItems");
+
+            migrationBuilder.DropTable(
+                name: "OrderOffers");
+
+            migrationBuilder.DropTable(
+                name: "OrderRequests");
 
             migrationBuilder.DropTable(
                 name: "Products");
