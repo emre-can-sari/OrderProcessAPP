@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json;
 using OrderProcess.DataAccess;
 using OrderProcess.Entities.Dtos;
 using OrderProcess.Entities.Entities;
@@ -17,36 +18,37 @@ public class OrderOfferService
 {
     private readonly ApplicationDbContext _context;
     private readonly IHttpContextAccessor _httpContextAccessor;
-
-    public OrderOfferService(ApplicationDbContext context, IHttpContextAccessor httpContextAccessor)
+    private readonly HttpClient _httpClient;
+    public OrderOfferService(ApplicationDbContext context, IHttpContextAccessor httpContextAccessor,HttpClient httpClient)
     {
         _context = context;
         _httpContextAccessor = httpContextAccessor;
+        _httpClient = httpClient;
     }
 
-    public async Task<OrderOffer> CreateOrderOffer(OrderOfferDTO orderOfferDto)
+    public async Task<OrderOffer> CreateOrderOffer(OrderOfferDTO orderOfferDto, int orderRequestId)
     {
         using var transaction = await _context.Database.BeginTransactionAsync();
 
         try
         {
-            var orderRequest = _context.OrderRequests.FirstOrDefault(x=> x.Id == orderOfferDto.OrderRequestId);
-            if(orderRequest.Status == OrderStatusEnum.accepted)
+            var orderRequest = _context.OrderRequests.FirstOrDefault(x => x.Id == orderRequestId);
+            if (orderRequest.Status == OrderStatusEnum.accepted)
             {
                 throw new Exception("You cannot bid on completed orders");
             }
 
             List<OrderOfferItem> orderItems = new List<OrderOfferItem>();
             decimal totalPrice = 0;
-            foreach (var productDto in orderOfferDto.OrderOfferItems)
+            foreach (var productDto in orderOfferDto.orderItemDTO)
             {
                 totalPrice += productDto.Price;
                 var product = await _context.Products
-                    .FirstOrDefaultAsync(p => p.Name == productDto.OrderItems.ProductName);
+                    .FirstOrDefaultAsync(p => p.Name == productDto.Name);
 
                 if (product == null)
                 {
-                    product = new Product { Name = productDto.OrderItems.ProductName };
+                    product = new Product { Name = productDto.Name };
                     _context.Products.Add(product);
                     await _context.SaveChangesAsync();
                 }
@@ -54,7 +56,7 @@ public class OrderOfferService
                 OrderItem orderItem = new OrderItem
                 {
                     Product = product,
-                    Quantity = productDto.OrderItems.ProductQuantity
+                    Quantity = productDto.Quantity
                 };
                 await _context.OrderItems.AddAsync(orderItem);
                 await _context.SaveChangesAsync();
@@ -75,7 +77,7 @@ public class OrderOfferService
                 OrderOffer orderOffer = new OrderOffer
                 {
                     UserId = userId,
-                    OrderRequestId = orderOfferDto.OrderRequestId,
+                    OrderRequestId = orderRequestId,
                     OrderOfferItems = orderItems,
                     TotalPrice = totalPrice,
                     DeliveryTime = orderOfferDto.DeliveryTime,
@@ -98,7 +100,6 @@ public class OrderOfferService
             throw new Exception("Order offer creation failed.", ex);
         }
     }
-
 
     public async Task<List<OrderOffer>> GetOrderOffersByUserId()
     {
@@ -134,9 +135,15 @@ public class OrderOfferService
     {
         using var transaction = await _context.Database.BeginTransactionAsync();
 
+
         try
         {
+          
+
             var orderOffer = await _context.OrderOffers
+                .Include (o => o.OrderOfferItems)
+                .ThenInclude (ooi=> ooi.OrderItem)
+                .ThenInclude(oi=> oi.Product)
                 .SingleOrDefaultAsync(o => o.Id == id);
 
             if (orderOffer == null)
@@ -169,10 +176,49 @@ public class OrderOfferService
                 _context.OrderOffers.Update(offer);
             }
 
-            await _context.SaveChangesAsync();
+            ResponseStockDTO responseStockDTO = new ResponseStockDTO
+            {
+                StockDTOs = new List<StockDTO>()
+            };
 
-            await transaction.CommitAsync();
-            return true;
+            foreach (var offer in orderOffer.OrderOfferItems)
+            {
+                StockDTO stockDTO = new StockDTO
+                {
+                    Name = offer.OrderItem.Product.Name,
+                    Quantity = offer.OrderItem.Quantity
+                };
+                responseStockDTO.StockDTOs.Add(stockDTO);
+
+            }
+
+
+            var url = "https://localhost:7078/api/TempStock";
+
+            var jsonContent = JsonConvert.SerializeObject(responseStockDTO);
+            var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+
+            var response = await _httpClient.PostAsync(url, content);
+
+            var responseContent = await response.Content.ReadAsStringAsync();
+
+      
+
+
+
+            if (response.IsSuccessStatusCode)
+            {
+                await _context.SaveChangesAsync();
+
+                await transaction.CommitAsync();
+                return true;
+
+            }
+            else
+            {
+                await transaction.RollbackAsync();
+                return false;
+            }
         }
         catch (Exception)
         {

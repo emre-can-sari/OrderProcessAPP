@@ -19,6 +19,7 @@ builder.Services.AddScoped<OrderRequestService>();
 builder.Services.AddScoped<OrderOfferService>();
 
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddHttpClient();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>

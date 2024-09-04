@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using OrderProcess.Business.Services;
 using OrderProcess.Entities.Dtos;
+using OrderProcess.Entities.Entities;
 
 namespace OrderProcessWebAPI.Controllers;
 
@@ -18,16 +19,16 @@ public class OrderOfferController : ControllerBase
         _orderOfferService = orderOfferService;
     }
 
-    [HttpPost]
+    [HttpPost("{orderRequestId}")]
     [Authorize(Roles = "user,admin")]
-    public async Task<IActionResult> CreateOrderOffer(OrderOfferDTO orderOfferDto)
+    public async Task<IActionResult> CreateOrderOffer(int orderRequestId, OrderOfferDTO orderOfferDto)
     {
         if (orderOfferDto == null)
             return BadRequest("Invalid request");
 
         try
         {
-            var orderOffer = await _orderOfferService.CreateOrderOffer(orderOfferDto);
+            var orderOffer = await _orderOfferService.CreateOrderOffer(orderOfferDto,orderRequestId);
 
             return Ok(orderOffer);
         }
@@ -77,7 +78,7 @@ public class OrderOfferController : ControllerBase
 
             if (result)
             {
-                return Ok(new { Message = "Offer accepted successfully." });
+                return Ok(new { Message = "Offer accepted successfully."});
             }
             else
             {

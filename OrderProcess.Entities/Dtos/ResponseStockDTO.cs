@@ -6,8 +6,7 @@ using System.Threading.Tasks;
 
 namespace OrderProcess.Entities.Dtos;
 
-public class OrderOfferDTO
+public class ResponseStockDTO
 {
-    public List<OrderOfferItemDTO> orderItemDTO {  get; set; }
-    public DateTime DeliveryTime { get; set; }
+    public List<StockDTO> StockDTOs { get; set; }
 }
