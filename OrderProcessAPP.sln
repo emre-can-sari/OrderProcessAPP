@@ -3,13 +3,13 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.10.35122.118
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OrderProcessWebAPI", "OrderProcessWebAPI\OrderProcessWebAPI.csproj", "{8DD25B9A-9863-488E-995D-9D55F76B8061}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OrderProcessWebAPI", "OrderProcessWebAPI\OrderProcessWebAPI.csproj", "{8DD25B9A-9863-488E-995D-9D55F76B8061}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OrderProcess.Entities", "OrderProcess.Entities\OrderProcess.Entities.csproj", "{7D37EDCD-3BDE-4F20-8DA9-6F578C3932F7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OrderProcess.Entities", "OrderProcess.Entities\OrderProcess.Entities.csproj", "{7D37EDCD-3BDE-4F20-8DA9-6F578C3932F7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OrderProcess.DataAccess", "OrderProcess.DataAccess\OrderProcess.DataAccess.csproj", "{F1D4674B-D52F-482C-974E-C2266D3BB247}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OrderProcess.DataAccess", "OrderProcess.DataAccess\OrderProcess.DataAccess.csproj", "{F1D4674B-D52F-482C-974E-C2266D3BB247}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OrderProcess.Business", "OrderProcess.Business\OrderProcess.Business.csproj", "{31E588A8-6C99-40FF-AE85-166225021323}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OrderProcess.Business", "OrderProcess.Business\OrderProcess.Business.csproj", "{31E588A8-6C99-40FF-AE85-166225021323}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

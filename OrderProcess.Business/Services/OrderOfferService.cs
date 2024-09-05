@@ -33,6 +33,10 @@ public class OrderOfferService
         try
         {
             var orderRequest = _context.OrderRequests.FirstOrDefault(x => x.Id == orderRequestId);
+            if (orderRequest == null)
+            {
+                throw new Exception("Order Not Found");
+            }
             if (orderRequest.Status == OrderStatusEnum.accepted)
             {
                 throw new Exception("You cannot bid on completed orders");
@@ -176,10 +180,7 @@ public class OrderOfferService
                 _context.OrderOffers.Update(offer);
             }
 
-            ResponseStockDTO responseStockDTO = new ResponseStockDTO
-            {
-                StockDTOs = new List<StockDTO>()
-            };
+            List<StockDTO> responseStockDTO = new List<StockDTO>();
 
             foreach (var offer in orderOffer.OrderOfferItems)
             {
@@ -188,7 +189,7 @@ public class OrderOfferService
                     Name = offer.OrderItem.Product.Name,
                     Quantity = offer.OrderItem.Quantity
                 };
-                responseStockDTO.StockDTOs.Add(stockDTO);
+                responseStockDTO.Add(stockDTO);
 
             }
 
